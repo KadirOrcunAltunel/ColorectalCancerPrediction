@@ -269,3 +269,5 @@ Epoch: 49 | train loss: 0.0486 | test loss: 0.1598 | test accuracy: 0.97 | val l
 ```
 
 The loss over epochs plot illustrates the training, test, and validation losses throughout the epochs. We can observe a steady decrease in all three losses, indicating that the model is effectively learning and enhancing its performance. The accuracy over epochs plot demonstrates the test and validation accuracies over the epochs. Both accuracies increase rapidly during the initial epochs and stabilize around 0.97 for the test set and 0.96 for the validation set, reflecting consistent and robust performance.
+
+![plot](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/plot.png)
