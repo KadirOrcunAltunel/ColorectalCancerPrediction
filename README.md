@@ -1,4 +1,4 @@
-# Colorectal Cancer Prediction Project
+# Colorectal Cancer Prediction
 
 ## Authors
 - Kadir Altunel
