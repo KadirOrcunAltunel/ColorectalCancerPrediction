@@ -13,7 +13,27 @@ Then, we generate a DataFrame from the histology image file names and their resp
 
 With the **pandas** library, we create a DataFrame containing columns for the file paths and their associated labels. To make the labels suitable for machine learning models, we utilize the **LabelEncoder** from the **sklearn** library, converting the string labels into numerical format. Finally, we construct a dictionary to map the encoded labels back to their original string representation and print the classes present in the dataset.
 
-![Code2](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code2.png)
+```python
+# Create DataFrame from file names and labels
+data = []
+label_pattern = re.compile(r'^[a-zA-Z]+')
+
+for filename in os.listdir(image_directory):
+    if filename.endswith('.tif'):
+        match = label_pattern.match(filename)
+        if match:
+            label = match.group(0)
+            full_path = os.path.join(image_directory, filename)
+            data.append([full_path, label])
+
+df = pd.DataFrame(data, columns=['file_path', 'class'])
+
+label_encoder = LabelEncoder()
+df['class'] = label_encoder.fit_transform(df['class'])
+class_dict = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
+print("Classes in the dataset are:", class_dict)
+```
+
 
 We split the dataset into training, validation, and test sets to prepare it for machine learning model training and evaluation. We begin by using the **train_test_split** function from the **sklearn** library to divide the data into training/validation and test sets, with the test set comprising 15% of the total data. The split is stratified to ensure that the class distribution remains consistent across the sets.
 
