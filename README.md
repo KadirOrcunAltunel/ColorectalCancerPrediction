@@ -59,7 +59,7 @@ For details, see [Conclusion](Conclusion.md)
 ## Visualizations
 Loss and accuracy plots over epochs are provided in the project's results section. These showcase the model's strong and consistent performance.
 
-![plot](plot.png)
+![plot](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/plot.png)
 
 For detailed information, see [Experiments](Experiments.md)
 
