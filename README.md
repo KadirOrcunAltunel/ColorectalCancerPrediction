@@ -8,6 +8,8 @@
 ## Overview
 This project focuses on leveraging machine learning, specifically Vision Transformers (ViT), to classify colorectal cancer histology images. By utilizing the Colorectal Histology dataset, we aim to enhance the speed and accuracy of colorectal cancer diagnosis.
 
+For more information, see [Background](Background.md)
+
 ## Motivation
 Colorectal cancer is one of the leading causes of cancer-related deaths. Early and accurate diagnosis can significantly impact patient outcomes. Recent advancements in AI and deep learning, especially in medical imaging, provide new opportunities to improve diagnosis and prognosis.
 
@@ -26,6 +28,8 @@ We used a pre-trained Vision Transformer (ViT) model from Hugging Face. The key 
 2. Feeding these vectors into a transformer encoder with positional embeddings.
 3. Using a classification layer to predict the label.
 
+More details can be seen on [Methods](Methods.md)
+
 ### Implementation Steps
 1. **Data Preparation**:
    - Images were preprocessed and split into training, validation, and test sets with stratified sampling.
@@ -43,13 +47,22 @@ We used a pre-trained Vision Transformer (ViT) model from Hugging Face. The key 
    - Training, validation, and test accuracies were monitored across epochs.
    - Final test accuracy: **97%**
    - Final validation accuracy: **96%**
+  
+For more information, see [Experiments](Experiments.md)
 
 ### Results
 - The ViT model demonstrated robust performance with high accuracy in classifying colorectal histology textures.
 - Training and validation losses showed steady decreases, indicating effective learning.
 
+For details, see [Conclusion](Conclusion.md)
+
 ## Visualizations
 Loss and accuracy plots over epochs are provided in the project's results section. These showcase the model's strong and consistent performance.
+
+![plot](plot.png)
+
+For detailed information, see [Experiments](Experiments.md)
+
 
 ## Future Work
 - Extend the dataset to include other types of medical images.
