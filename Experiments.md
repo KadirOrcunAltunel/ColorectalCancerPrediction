@@ -1,6 +1,13 @@
 For the colon histology report, we incorporate a comprehensive collection of histology images labeled "ColonHistology" into our Python environment. By using the Google Drive API, we mount Google Drive to access this extensive image collection. Leveraging the os library, known for its powerful file manipulation features, we enumerate the files in the specified directory, allowing us to handle the images systematically.
 
-![Code1](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code1.png)
+```python
+image_directory = '/content/drive/MyDrive/ColonHistology'
+     
+
+files = os.listdir(image_directory)
+files
+```
+
 
 Then, we generate a DataFrame from the histology image file names and their respective labels. We start by defining an empty list to store the data and a regular expression pattern to identify labels in the file names. Using the **os** library, we list all files in the specified directory and filter for those with a **.tif** extension. We then match the file names to our label pattern to extract the labels.
 
