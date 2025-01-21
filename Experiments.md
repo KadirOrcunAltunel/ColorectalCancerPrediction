@@ -39,7 +39,15 @@ We split the dataset into training, validation, and test sets to prepare it for 
 
 Next, we further split the training/validation set into separate training and validation sets, with the validation set comprising approximately 5.88% of the total data. Again, we use stratified splitting to maintain the class distribution.
 
-![Code3](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code3.png)
+```python
+train_val_df, test_df = train_test_split(df, test_size=0.15, stratify=df['class'], random_state=42)
+
+train_df, val_df = train_test_split(train_val_df, test_size=0.0588, stratify=train_val_df['class'], random_state=42)
+
+print(f'Training set size: {len(train_df)}')
+print(f'Validation set size: {len(val_df)}')
+print(f'Test set size: {len(test_df)}')
+```
 
 We create a custom dataset class to handle the histology images and their corresponding labels. This class, named ColonHistologyDataset, inherits from the Dataset class in PyTorch. We start by initializing the class with the DataFrame containing the file paths and labels, and an optional transformation parameter.
 
@@ -47,7 +55,37 @@ The **__len__** method returns the number of samples in the dataset. The **__get
 
 We define a set of transformations using **transforms.Compose** to resize the images to 224x224 pixels and convert them to tensors. These transformations are applied to the training, validation, and test datasets.
 
-![Code4](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code4.png)
+```python
+class ColonHistologyDataset(Dataset):
+  def __init__(self, dataframe, transform=None):
+    self.dataframe = dataframe
+    self.transform = transform
+
+  def __len__(self):
+    return len(self.dataframe)
+
+  def __getitem__(self, idx):
+    if torch.is_tensor(idx):
+      idx = idx.tolist()
+
+    img_name = self.dataframe.iloc[idx, 0]
+    image = Image.open(img_name).convert('RGB')
+    class_label = self.dataframe.iloc[idx, 1]
+
+    if self.transform:
+      image = self.transform(image)
+
+    return image, class_label
+
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor()
+])
+
+train_dataset = ColonHistologyDataset(dataframe=train_df, transform=transform)
+val_dataset = ColonHistologyDataset(dataframe=val_df, transform=transform)
+test_dataset = ColonHistologyDataset(dataframe=test_df, transform=transform)
+```
 
 We go ahead and design a custom **Vision Transformer (ViT)** model for image classification. This class, named **ViTForImageClassification**, extends the **nn.Module** from PyTorch. We start by initializing the model with the specified number of labels, defaulting to 8.
 
@@ -55,7 +93,29 @@ In the initialization method, we load a pre-trained **ViT** model from the Huggi
 
 The forward method processes the input pixel values through the **ViT** model, applies dropout to the output, and then passes it through the classifier to get the logits. If labels are provided, the method computes the **cross-entropy loss** between the logits and the labels. The method returns the logits and the loss (if computed).
 
-![Code5](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code5.png)
+```python
+class ViTForImageClassification(nn.Module):
+    def __init__(self, num_labels=8):
+        super(ViTForImageClassification, self).__init__()
+        self.vit = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
+        self.dropout = nn.Dropout(0.5)
+        self.classifier = nn.Linear(self.vit.config.hidden_size, num_labels)
+        self.num_labels = num_labels
+
+    def forward(self, pixel_values, labels):
+        outputs = self.vit(pixel_values=pixel_values)
+        output = self.dropout(outputs.last_hidden_state[:,0])
+        logits = self.classifier(output)
+
+        loss = None
+        if labels is not None:
+          loss_fct = nn.CrossEntropyLoss()
+          loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+        if loss is not None:
+          return logits, loss.item()
+        else:
+          return logits, None
+```
 
 We set up the training parameters and initialize the **ViT** model for image classification. First, we define key hyperparameters, including the number of epochs, batch size, validation batch size, and learning rate.
 
@@ -63,7 +123,26 @@ Next, we identify the unique classes in the dataset to determine the number of l
 
 We configure the optimizer using the Adam algorithm with the specified learning rate and define the loss function as cross-entropy loss. To leverage the computational power of GPUs, we check for CUDA availability and set the device accordingly, moving the model to the GPU if available.
 
-![Code6](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code6.png)
+```python
+EPOCHS = 50
+BATCH_SIZE = 10
+VAL_BATCH = 1
+LEARNING_RATE = 0.000001
+     
+unique_classes = df['class'].unique()
+
+model = ViTForImageClassification(num_labels=len(unique_classes))
+
+feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224-in21k', do_rescale=False)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+loss_func = nn.CrossEntropyLoss()
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    model.cuda()
+```
 
 We set up the data loaders and lists to store metrics for training, validation, and testing the **ViT** model for image classification. Data loaders are configured for the training, validation, and test sets, each with specified batch sizes.
 
@@ -73,11 +152,118 @@ At the end of each epoch, we calculate the test loss and accuracy by evaluating 
 
 The losses and accuracies are stored in their respective lists for plotting. Finally, we plot the training, test, and validation losses, as well as the test and validation accuracies, over the epochs.
 
-![Code7](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code7.png)
-![Code8](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code8.png)
-![Code9](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code9.png)
+```python
+print("Number of train samples: ", len(train_df))
+print("Number of test samples: ", len(test_df))
+print("Detected Classes are: ", class_dict)
 
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_dataset, batch_size=VAL_BATCH, shuffle=True, num_workers=0)
 
+# Lists to store metrics
+train_losses = []
+test_losses = []
+val_losses = []
+test_accuracies = []
+val_accuracies = []
+
+# Train the model
+for epoch in range(EPOCHS):
+    train_loss = 0.0
+    for step, (x, y) in enumerate(train_loader):
+        # Convert batch to numpy array
+        x = np.array(x)
+        # Apply feature extractor
+        features = feature_extractor(x, return_tensors="pt")['pixel_values']
+        # Send to GPU if available
+        x, y = features.to(device), y.to(device)
+        b_x = Variable(x)   # batch x (image)
+        b_y = Variable(y)   # batch y (target)
+        # Feed through model
+        output, loss = model(b_x, None)
+        # Calculate loss
+        if loss is None:
+            loss = loss_func(output, b_y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        train_loss += loss.item() if isinstance(loss, torch.Tensor) else loss
+
+    # Calculate test loss and accuracy
+    test_loss = 0.0
+    test_correct = 0
+    test_total = 0
+    with torch.no_grad():
+        for test_x, test_y in test_loader:
+            # Reshape and get feature matrices as needed
+            test_x = feature_extractor(np.array(test_x), return_tensors="pt")['pixel_values']
+            test_x = test_x.to(device)
+            test_y = test_y.to(device)
+            # Generate prediction
+            test_output, test_loss_batch = model(test_x, test_y)
+            test_loss += test_loss_batch.item() if isinstance(test_loss_batch, torch.Tensor) else test_loss_batch
+            # Predicted class value using argmax
+            test_predicted_class = test_output.argmax(dim=1)
+            test_correct += (test_predicted_class == test_y).sum().item()
+            test_total += test_y.size(0)
+    test_accuracy = test_correct / test_total
+    avg_test_loss = test_loss / len(test_loader)
+
+    # Calculate validation loss and accuracy at the end of each epoch
+    val_loss = 0.0
+    val_correct = 0
+    val_total = 0
+    with torch.no_grad():
+        for val_x, val_y in val_loader:
+            # Reshape and get feature matrices as needed
+            val_x = feature_extractor(np.array(val_x), return_tensors="pt")['pixel_values']
+            val_x = val_x.to(device)
+            val_y = val_y.to(device)
+            # Generate prediction
+            val_output, val_loss_batch = model(val_x, val_y)
+            val_loss += val_loss_batch.item() if isinstance(val_loss_batch, torch.Tensor) else val_loss_batch
+            # Predicted class value using argmax
+            val_predicted_class = val_output.argmax(dim=1)
+            val_correct += (val_predicted_class == val_y).sum().item()
+            val_total += val_y.size(0)
+    val_accuracy = val_correct / val_total
+    avg_train_loss = train_loss / len(train_loader)
+    avg_val_loss = val_loss / len(val_loader)
+
+    # Store metrics for plotting
+    train_losses.append(avg_train_loss)
+    test_losses.append(avg_test_loss)
+    val_losses.append(avg_val_loss)
+    test_accuracies.append(test_accuracy)
+    val_accuracies.append(val_accuracy)
+
+    print(f'Epoch: {epoch} | train loss: {avg_train_loss:.4f} | test loss: {avg_test_loss:.4f} | test accuracy: {test_accuracy:.2f} | val loss: {avg_val_loss:.4f} | val accuracy: {val_accuracy:.2f}')
+
+# Plotting the results
+epochs_range = range(EPOCHS)
+
+plt.figure(figsize=(12, 8))
+plt.subplot(2, 1, 1)
+plt.plot(epochs_range, train_losses, label='Training Loss')
+plt.plot(epochs_range, test_losses, label='Test Loss')
+plt.plot(epochs_range, val_losses, label='Validation Loss')
+plt.legend(loc='upper right')
+plt.title('Loss Over Epochs')
+
+plt.subplot(2, 1, 2)
+plt.plot(epochs_range, test_accuracies, label='Test Accuracy')
+plt.plot(epochs_range, val_accuracies, label='Validation Accuracy')
+plt.legend(loc='upper left')
+plt.title('Accuracy Over Epochs')
+
+plt.xlabel('Epochs')
+plt.tight_layout()
+plt.show()
+```
 The output shows that at the end of the final epoch, the model achieved high test and validation accuracies of 97% and 96%, respectively.
 
-![Code10](https://github.com/KadirOrcunAltunel/ColorectalCancerPrediction/blob/main/images/code10.png)
+```
+Epoch: 49 | train loss: 0.0486 | test loss: 0.1598 | test accuracy: 0.97 | val loss: 0.1928 | val accuracy: 0.96
+
+```
