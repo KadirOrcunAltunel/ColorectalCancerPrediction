@@ -51,7 +51,7 @@ More details can be seen on [Methods](Methods.md)
 For more information, see [Experiments](Experiments.md)
 
 ### Results
-- The ViT model demonstrated robust performance with high accuracy in classifying colorectal histology textures.
+- The ViT model demonstrated high performance with high accuracy in classifying colorectal histology textures.
 - Training and validation losses showed steady decreases, indicating effective learning.
 
 For details, see [Conclusion](Conclusion.md)
